@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --bg: #0a0e1a;
     --bg2: #111827;
@@ -17,7 +16,6 @@
     --border2: rgba(255,255,255,0.18);
     --card: rgba(255,255,255,0.05);
   }
-
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--bg);
@@ -29,7 +27,6 @@
     overflow: hidden;
     position: relative;
   }
-
   canvas#bg {
     position: fixed;
     inset: 0;
@@ -37,7 +34,6 @@
     pointer-events: none;
     z-index: 0;
   }
-
   .wrap {
     position: relative;
     z-index: 1;
@@ -48,11 +44,9 @@
     flex-direction: column;
     align-items: center;
   }
-
   .scene { display: none; flex-direction: column; align-items: center; width: 100%; animation: up 0.5s ease both; }
   .scene.active { display: flex; }
   @keyframes up { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
-
   .open-title {
     font-family: 'DM Serif Display', serif;
     font-size: 32px;
@@ -65,7 +59,6 @@
     animation: reveal 1.7s steps(18) 0.2s both;
   }
   @keyframes reveal { from { clip-path: inset(0 100% 0 0) } to { clip-path: inset(0 0 0 0) } }
-
   .open-sub {
     font-size: 14px;
     color: var(--text2);
@@ -74,7 +67,6 @@
     animation: up 0.8s ease 1.8s both;
     opacity: 0;
   }
-
   .streak {
     font-size: 12px;
     color: var(--text2);
@@ -86,7 +78,6 @@
     animation: up 0.8s ease 2s both;
     opacity: 0;
   }
-
   .cta {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
@@ -103,7 +94,6 @@
   }
   .cta:hover { background: var(--bg2); transform: scale(1.03); }
   .cta:active { transform: scale(0.97); }
-
   .section-label {
     font-size: 12px;
     letter-spacing: 0.08em;
@@ -111,16 +101,17 @@
     color: var(--text2);
     margin-bottom: 1.25rem;
   }
-
-  .mood-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+ .mood-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
     width: 100%;
     margin-bottom: 1.5rem;
   }
-
   .mood-card {
+    flex: 1 1 85px;
+    max-width: 110px;
     display: flex;
     flex-direction: column;
     align-items: center;
