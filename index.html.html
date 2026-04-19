@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How's your day?</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #111827;
+    --text: #e8eaf6;
+    --text2: #9aa3c2;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.18);
+    --card: rgba(255,255,255,0.05);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  canvas#bg {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .scene { display: none; flex-direction: column; align-items: center; width: 100%; animation: up 0.5s ease both; }
+  .scene.active { display: flex; }
+  @keyframes up { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+
+  .open-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.3;
+    margin-bottom: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    animation: reveal 1.7s steps(18) 0.2s both;
+  }
+  @keyframes reveal { from { clip-path: inset(0 100% 0 0) } to { clip-path: inset(0 0 0 0) } }
+
+  .open-sub {
+    font-size: 14px;
+    color: var(--text2);
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: up 0.8s ease 1.8s both;
+    opacity: 0;
+  }
+
+  .streak {
+    font-size: 12px;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 14px;
+    margin-bottom: 1.5rem;
+    background: var(--card);
+    animation: up 0.8s ease 2s both;
+    opacity: 0;
+  }
+
+  .cta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 11px 30px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    animation: up 0.8s ease 2s both;
+    opacity: 0;
+  }
+  .cta:hover { background: var(--bg2); transform: scale(1.03); }
+  .cta:active { transform: scale(0.97); }
+
+  .section-label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 1.25rem;
+  }
+
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .mood-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 6px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    user-select: none;
+  }
+  .mood-card:hover { border-color: var(--border2); background: var(--bg2); transform: translateY(-4px); }
+  .mood-card:active { transform: scale(0.94); }
+
+  .blob { width: 48px; height: 48px; }
+  .blob svg { width: 100%; height: 100%; }
+  .mood-label { font-size: 10.5px; color: var(--text2); text-align: center; line-height: 1.4; }
+
+  .out-card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    animation: up 0.4s ease both;
+  }
+
+  .out-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.1rem; }
+  .out-title { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .out-sub { font-size: 12px; color: var(--text2); }
+
+  .out-body {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+
+  .out-extra {
+    font-size: 12.5px;
+    color: var(--text2);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 13px;
+    line-height: 1.7;
+  }
+  .out-extra a { color: #a5b4fc; text-decoration: underline; text-underline-offset: 3px; }
+
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 1.1rem 0; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    color: var(--text2);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+  }
+  .btn:hover { background: var(--bg2); color: var(--text); }
+  .btn:active { transform: scale(0.95); }
+
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-12px)} 70%{transform:translateY(-3px)} }
+  @keyframes wiggle { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-7deg)} 75%{transform:rotate(7deg)} }
+  @keyframes droop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+  @keyframes hug { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  @keyframes punch { 0%,100%{transform:scale(1)} 35%{transform:scale(0.9) rotate(-4deg)} 65%{transform:scale(1.05)} }
+  @keyframes confetti-fall { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(105vh) rotate(540deg);opacity:0} }
+  @keyframes rain-fall { 0%{transform:translateY(-20px);opacity:0} 50%{opacity:0.4} 100%{transform:translateY(105vh);opacity:0} }
+
+  .idle-float { animation: float 3s ease-in-out infinite; display:inline-block; }
+  .idle-bounce { animation: bounce 1.1s ease-in-out infinite; display:inline-block; }
+  .idle-wiggle { animation: wiggle 0.95s ease-in-out infinite; display:inline-block; }
+  .idle-droop { animation: droop 2.2s ease-in-out infinite; display:inline-block; }
+  .idle-hug { animation: hug 1.6s ease-in-out infinite; display:inline-block; }
+
+  .confetti-wrap, .rain-wrap {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 99;
+  }
+  .confetti-piece { position:absolute; width:7px; height:7px; animation: confetti-fall linear forwards; }
+  .rain-drop { position:absolute; width:1.5px; background: rgba(100,130,180,0.35); border-radius:2px; animation: rain-fall linear infinite; }
+
+  .punch-wrap { cursor: pointer; display: inline-block; }
+  .punch-wrap:active svg { animation: punch 0.3s ease; }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div class="confetti-wrap" id="confetti-wrap"></div>
+<div class="rain-wrap" id="rain-wrap"></div>
+
+<div class="wrap">
+  <div class="scene active" id="scene-open">
+    <div class="streak" id="streak-badge" style="display:none"><span id="streak-text"></span></div>
+    <div class="open-title">ada cerita apa hari ini?</div>
+    <div class="open-sub">Coba pilih mood yang paling bisa ngegambarin harimu</div>
+    <button class="cta" onclick="goTo('scene-mood')">Mulai &rarr;</button>
+  </div>
+
+  <div class="scene" id="scene-mood">
+    <div class="section-label">Lagi ngerasa...</div>
+    <div class="mood-grid">
+      <div class="mood-card" onclick="pick('capek')">
+        <div class="blob idle-float">
+          <svg viewBox="0 0 60 60" fill="none"><ellipse cx="30" cy="33" rx="23" ry="21" fill="#dde0f5"/><rect x="18" y="27" width="10" height="5" rx="2.5" fill="#7c83c8" opacity="0.55"/><rect x="32" y="27" width="10" height="5" rx="2.5" fill="#7c83c8" opacity="0.55"/><path d="M23 40 Q30 37 37 40" stroke="#7c83c8" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="mood-label">Capek</div>
+      </div>
+      <div class="mood-card" onclick="pick('seneng')">
+        <div class="blob idle-bounce">
+          <svg viewBox="0 0 60 60" fill="none"><ellipse cx="30" cy="33" rx="23" ry="21" fill="#fdeea3"/><circle cx="22" cy="31" r="3" fill="#7a5c00"/><circle cx="38" cy="31" r="3" fill="#7a5c00"/><path d="M21 39 Q30 46 39 39" stroke="#7a5c00" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="18" cy="35" r="2.5" fill="#f5a5a0" opacity="0.6"/><circle cx="42" cy="35" r="2.5" fill="#f5a5a0" opacity="0.6"/></svg>
+        </div>
+        <div class="mood-label">Senang</div>
+      </div>
+      <div class="mood-card" onclick="pick('biasa')">
+        <div class="blob idle-float">
+          <svg viewBox="0 0 60 60" fill="none"><ellipse cx="30" cy="33" rx="23" ry="21" fill="#e3e2de"/><rect x="19" y="29" width="8" height="4" rx="2" fill="#9a9891"/><rect x="33" y="29" width="8" height="4" rx="2" fill="#9a9891"/><line x1="23" y1="40" x2="37" y2="40" stroke="#9a9891" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="mood-label">Biasa aja</div>
+      </div>
+      <div class="mood-card" onclick="pick('sedih')">
+        <div class="blob idle-droop">
+          <svg viewBox="0 0 60 60" fill="none"><ellipse cx="30" cy="33" rx="23" ry="21" fill="#d6e8f8"/><path d="M19 30 Q22 27 25 30" stroke="#6aa3d5" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M35 30 Q38 27 41 30" stroke="#6aa3d5" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M23 42 Q30 38 37 42" stroke="#6aa3d5" stroke-width="1.8" stroke-linecap="round" fill="none"/><ellipse cx="25" cy="34" rx="1.2" ry="2.5" fill="#a8ccee" opacity="0.8"/><ellipse cx="35" cy="34" rx="1.2" ry="2.5" fill="#a8ccee" opacity="0.8"/></svg>
+        </div>
+        <div class="mood-label">Sedih</div>
+      </div>
+      <div class="mood-card" onclick="pick('sebel')">
+        <div class="blob idle-wiggle">
+          <svg viewBox="0 0 60 60" fill="none"><ellipse cx="30" cy="33" rx="23" ry="21" fill="#f8dede"/><path d="M18 27 Q22 30 26 27" stroke="#d97070" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M34 27 Q38 30 42 27" stroke="#d97070" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="23" cy="33" r="3" fill="#d97070"/><circle cx="37" cy="33" r="3" fill="#d97070"/><path d="M24 42 Q30 38 36 42" stroke="#d97070" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="mood-label">Kesal</div>
+      </div>
+    </div>
+    <button class="btn" onclick="goTo('scene-open')">← Kembali</button>
+  </div>
+
+  <div class="scene" id="scene-output">
+    <div class="out-card" id="out-card">
+      <div class="out-header">
+        <div id="out-char"></div>
+        <div>
+          <div class="out-title" id="out-title"></div>
+          <div class="out-sub" id="out-sub"></div>
+        </div>
+      </div>
+      <div class="out-body" id="out-body"></div>
+      <div class="out-extra" id="out-extra"></div>
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn" onclick="refresh()">Coba yang lain</button>
+        <button class="btn" onclick="goTo('scene-mood')">Ganti mood</button>
+        <button class="btn" onclick="goTo('scene-open')">← Awal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MOODS = {
+  capek: { outputs: [
+    { char:`<div class="idle-float" style="font-size:42px">🐱</div>`, title:'Rehat dulu yuk.', sub:'Hari ini pasti panjang ya?', body:'Nggak apa-apa kalau belum semuanya beres hari ini. Sekarang waktunya kamu *off*. Jangan lupa minum air putih terus rebahan.', extra:'🎵 Dengerin ini sambil tiduran → <a href="https://open.spotify.com/playlist/0vvXsWCC9xrXsKd4eIokkR" target="_blank">Lofi Beats</a>' },
+    { char:`<div class="idle-float" style="font-size:42px">🌙</div>`, title:'Kerja bagus buat hari ini.', sub:'Sekarang waktunya istirahat.', body:'Matiin dulu notifnya, stop overthinking-nya. Malam ini kasih reward ke diri sendiri buat santai, oke?', extra:'💤 Jangan begadang ya.' },
+    { char:`<div class="idle-float" style="font-size:42px">☕</div>`, title:'Pasti capek banget ya?', sub:'Sini tarik napas dulu.', body:'Kadang kamu suka lupa kalau kamu juga butuh istirahat. Jangan diforsir terus, dunianya nggak akan runtuh kok kalau kamu rehat sebentar.', extra:'🎵 Temen nyantai malam ini → <a href="https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn" target="_blank">Chill Vibes</a>' }
+  ]},
+  seneng: { outputs: [
+    { char:`<div class="idle-bounce" style="font-size:42px">✨</div>`, title:'Wah, lagi happy nih?', sub:'Ikut seneng dengernya!', body:'Semoga good mood-nya awet sampai besok ya. Kalau ada kejadian seru hari ini, boleh banget lho diceritain.', extra:'🎵 Biar makin asik → <a href="https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0" target="_blank">Mood Booster</a>' },
+    { char:`<div class="idle-bounce" style="font-size:42px">🌤️</div>`, title:'Cerah banget auranya.', sub:'Pertahanin ya!', body:'Lihat/dengar kamu seneng gini rasanya juga ikut lega. Nikmatin hari ini ya, kamu pantes dapet hari yang bagus.', extra:'📝 Jangan lupa senyum' },
+    { char:`<div class="idle-bounce" style="font-size:42px">🧃</div>`, title:'Yeay, good day!', sub:'Simpen energinya.', body:'Hari-hari seru kayak gini yang bakal jadi *charger* kalau lagi capek. Enjoy the moment', extra:'🎵 → <a href="https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0" target="_blank">Feel Good Hits</a>' }
+  ]},
+  biasa: { outputs: [
+    { char:`<div class="idle-float" style="font-size:42px">🪨</div>`, title:'Lagi mode hemat energi?', sub:'Yang penting aman.', body:'Nggak semua hari harus ada kejutannya kok. Hari yang tenang tanpa drama juga udah rezeki.', extra:'😄 Tebak-tebakan random: Kenapa ikan nggak bisa ketawa? Karena di air nggak ada badut.' },
+    { char:`<div class="idle-float" style="font-size:42px">☁️</div>`, title:'Lagi flat ya hari ini.', sub:'Nggak apa-apa banget.', body:'Ngambang aja dulu ngikutin arus. Nggak harus selalu *on fire* setiap hari. Santai aja.', extra:'🎵 Musik nemenin bengong → <a href="https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn" target="_blank">Chill Vibes</a>' },
+    { char:`<div class="idle-float" style="font-size:42px">🍃</div>`, title:'Tenang dan damai.', sub:'*Take your time*.', body:'Hari yang kerasa biasa aja kadang malah hari yang paling kita butuhin buat bernapas lega. Nikmatin tenangnya.', extra:'🎲 Besok coba beli jajanan yang belum pernah kamu cobain deh.' }
+  ]},
+  sedih: { outputs: [
+    { char:`<div class="idle-hug" style="font-size:42px">🫂</div>`, title:'Peluk jauh.', sub:'Nggak usah pura-pura kuat.', body:'Kalau emang lagi capek hati, nangis juga gapapa. Aku di sini kalau kamu butuh tempat buat numpahin semuanya.', extra:'🎵 Dengerin ini aja → <a href="https://open.spotify.com/playlist/37i9dQZF1DX3YSRoSdA634" target="_blank">Comfort Music</a>' },
+    { char:`<div class="idle-droop" style="font-size:42px">🌧️</div>`, title:'Lagi mendung ya?', sub:'Nggak apa-apa, wajar kok.', body:'Nggak usah buru-buru pengen ngerasa baikan. Diterima aja dulu perasaannya. Besok kita coba lagi ya.', extra:'☕ Bikin teh hangat, cari posisi paling nyaman, istirahat.' },
+    { char:`<div class="idle-hug" style="font-size:42px">🕯️</div>`, title:'Hei, ini bakal berlalu kok.', sub:'Kamu pasti bisa lewatinnya.', body:'Mungkin sekarang rasanya berat banget, tapi kamu udah sering ngelewatin hari-hari susah sebelumnya. *You are stronger than you think*.', extra:'💙 *I’m just a chat away* kalau butuh temen ngobrol.' }
+  ]},
+  sebel: { outputs: [
+    { char:`<div class="punch-wrap" onclick="punchIt()"><svg width="50" height="65" viewBox="0 0 56 72" fill="none"><rect x="14" y="8" width="28" height="46" rx="14" fill="#f5c8c8"/><rect x="18" y="8" width="20" height="7" rx="3.5" fill="#eeaaaa"/><line x1="28" y1="1" x2="28" y2="8" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/><circle cx="28" cy="30" r="7" fill="#d97070" opacity="0.35"/><ellipse cx="28" cy="65" rx="10" ry="3" fill="#f5c8c8" opacity="0.4"/></svg></div>`, title:'Wah, siapa yang bikin bete?', sub:'Tap aja sansaknya sepuasmu.', body:'Keluarin aja keselnya di sini, jangan ditahan nanti jadi jerawat. Tarik napas dalem-dalem ya.', extra:'✏️ Kalau masih kesel, coba tulis unek-uneknya di kertas terus sobek-sobek.' },
+    { char:`<div class="idle-wiggle" style="font-size:42px">🌋</div>`, title:'Lagi pengen marah ya?', sub:'Keluarin aja.', body:'Wajar kalau kesel pas ada hal yang nggak jalan sesuai rencana. Kasih waktu bentar buat misuh-misuh, abis itu kita cari solusi.', extra:'🎵 Lagu buat nemenin ngomel → <a href="https://open.spotify.com/playlist/37i9dQZF1DWU4xkXueiKd6" target="_blank">Anger Release</a>' },
+    { char:`<div class="idle-wiggle" style="font-size:42px">🫙</div>`, title:'Awas meledak.', sub:'Minum air putih dulu gih.', body:'Lagi emosi gini biasanya pikiran jadi ikutan mumet. Jauhin dulu HP-nya bentar, cari angin seger di luar.', extra:'💧 Jangan bikin keputusan apapun pas lagi emosi, mending tidur.' }
+  ]}
+};
+
+let mood = null, idx = 0, punches = 0;
+
+function goTo(id) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  clearFx();
+}
+
+function pick(m) {
+  mood = m;
+  idx = Math.floor(Math.random() * MOODS[m].outputs.length);
+  render(); goTo('scene-output'); fx(m);
+}
+
+function render() {
+  const d = MOODS[mood].outputs[idx];
+  document.getElementById('out-char').innerHTML = d.char;
+  document.getElementById('out-title').textContent = d.title;
+  document.getElementById('out-sub').textContent = d.sub;
+  document.getElementById('out-body').textContent = d.body;
+  document.getElementById('out-extra').innerHTML = d.extra;
+  const c = document.getElementById('out-card');
+  c.style.animation='none'; void c.offsetWidth; c.style.animation='up 0.4s ease both';
+}
+
+function refresh() {
+  const list = MOODS[mood].outputs;
+  let n = Math.floor(Math.random()*list.length);
+  if(list.length>1) while(n===idx) n=Math.floor(Math.random()*list.length);
+  idx=n; render(); fx(mood);
+}
+
+function clearFx() {
+  document.getElementById('confetti-wrap').innerHTML='';
+  document.getElementById('rain-wrap').innerHTML='';
+  punches=0;
+}
+
+function fx(m) {
+  clearFx();
+  if(m==='seneng') confetti(30);
+  if(m==='sedih') rain();
+}
+
+function confetti(n) {
+  const w = document.getElementById('confetti-wrap');
+  const cols = ['#fde68a','#c7d2fe','#fbcfe8','#bbf7d0','#a5f3fc','#fca5a5'];
+  for(let i=0;i<n;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    el.style.cssText=`left:${Math.random()*100}%;top:-10px;background:${cols[i%cols.length]};width:${6+Math.random()*5}px;height:${6+Math.random()*5}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.5+Math.random()*1.5}s;animation-delay:${Math.random()*0.7}s`;
+    w.appendChild(el);
+    setTimeout(()=>el.remove(),3500);
+  }
+}
+
+function rain() {
+  const w = document.getElementById('rain-wrap');
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');
+    el.className='rain-drop';
+    el.style.cssText=`left:${Math.random()*100}%;height:${14+Math.random()*18}px;animation-duration:${0.8+Math.random()*0.8}s;animation-delay:${Math.random()*3}s`;
+    w.appendChild(el);
+  }
+  setTimeout(()=>w.innerHTML='',8000);
+}
+
+function punchIt() {
+  punches++;
+  if(punches>=5){
+    confetti(20);
+    document.getElementById('out-title').textContent='Lega kan?';
+    document.getElementById('out-sub').textContent='Itu cukup untuk sekarang.';
+    document.getElementById('out-body').textContent='Nah. Sekarang tarik napas, dan mulai dari sana.';
+    punches=0;
+  }
+}
+
+// Streak
+(function(){
+  try {
+    const data = JSON.parse(localStorage.getItem('moodpicker_streak')||'{}');
+    const today = new Date().toDateString();
+    let count = 1;
+    if(data.last===today) { count=data.count||1; }
+    else {
+      const yesterday=new Date(Date.now()-86400000).toDateString();
+      count = data.last===yesterday ? (data.count||0)+1 : 1;
+      localStorage.setItem('moodpicker_streak', JSON.stringify({last:today,count}));
+    }
+    if(count>=2){
+      const badge=document.getElementById('streak-badge');
+      badge.style.display='inline-block';
+      document.getElementById('streak-text').textContent = count>=7 ? `Hari ke-${count} — makasih udah cerita` : `Hari ke-${count}`;
+    }
+  } catch(e){}
+})();
+
+// Night sky star system
+(function(){
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let stars = [], shootingStars = [], W, H;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    stars = [];
+    // small dim stars
+    for(let i=0;i<200;i++){
+      stars.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*0.8+0.2, opacity:Math.random()*0.5+0.1, twinkleSpeed:Math.random()*0.02+0.005, twinkleOffset:Math.random()*Math.PI*2 });
+    }
+    // medium stars
+    for(let i=0;i<80;i++){
+      stars.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.2+0.8, opacity:Math.random()*0.5+0.3, twinkleSpeed:Math.random()*0.03+0.01, twinkleOffset:Math.random()*Math.PI*2 });
+    }
+    // bright stars
+    for(let i=0;i<30;i++){
+      stars.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.5+1.2, opacity:Math.random()*0.3+0.7, twinkleSpeed:Math.random()*0.04+0.02, twinkleOffset:Math.random()*Math.PI*2, glow:true });
+    }
+  }
+
+  let t = 0;
+  function spawnShooting(){
+    shootingStars.push({
+      x: Math.random()*W*0.7,
+      y: Math.random()*H*0.4,
+      len: Math.random()*120+80,
+      speed: Math.random()*6+4,
+      opacity: 1,
+      angle: Math.PI/5 + (Math.random()-0.5)*0.3,
+      life: 1
+    });
+  }
+
+  function draw(){
+    // deep night sky gradient
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#04071a');
+    grad.addColorStop(0.5,'#080d24');
+    grad.addColorStop(1,'#0d1330');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    t += 0.016;
+
+    // draw stars
+    stars.forEach(s=>{
+      const twinkle = Math.sin(t*s.twinkleSpeed*60 + s.twinkleOffset);
+      const op = s.opacity + twinkle * 0.2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+
+      if(s.glow){
+        const g = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*4);
+        g.addColorStop(0, `rgba(210,220,255,${op})`);
+        g.addColorStop(0.4, `rgba(180,200,255,${op*0.4})`);
+        g.addColorStop(1, `rgba(160,180,255,0)`);
+        ctx.fillStyle = g;
+        ctx.arc(s.x,s.y,s.r*4,0,Math.PI*2);
+      } else {
+        ctx.fillStyle = `rgba(210,220,255,${Math.max(0,Math.min(1,op))})`;
+      }
+      ctx.fill();
+    });
+
+    // shooting stars
+    shootingStars.forEach((ss,i)=>{
+      ss.x += Math.cos(ss.angle)*ss.speed;
+      ss.y += Math.sin(ss.angle)*ss.speed;
+      ss.life -= 0.018;
+      if(ss.life<=0){ shootingStars.splice(i,1); return; }
+
+      const tailX = ss.x - Math.cos(ss.angle)*ss.len;
+      const tailY = ss.y - Math.sin(ss.angle)*ss.len;
+      const g = ctx.createLinearGradient(tailX,tailY,ss.x,ss.y);
+      g.addColorStop(0,'rgba(255,255,255,0)');
+      g.addColorStop(1,`rgba(255,255,255,${ss.life*0.9})`);
+      ctx.beginPath();
+      ctx.moveTo(tailX,tailY);
+      ctx.lineTo(ss.x,ss.y);
+      ctx.strokeStyle=g;
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+    });
+
+    if(Math.random()<0.003 && shootingStars.length<2) spawnShooting();
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize',resize);
+  resize(); draw();
+})();
+</script>
+</body>
+</html>
